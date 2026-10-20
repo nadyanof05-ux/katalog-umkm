@@ -66,18 +66,23 @@ export async function gantiPassword(prevState, formData) {
   return { success: "Password berhasil diganti." };
 }
 
-export async function tambahProduk(prevState, formData) {
-  // Wajib login: diperiksa di server sebelum data diubah.
+// Memeriksa login admin di server. Mengembalikan { supabase } atau { error }.
+async function periksaAdmin() {
   const supabase = await buatKlienAdmin();
   const {
     data: { user },
-    error: authError,
+    error,
   } = await supabase.auth.getUser();
 
-  if (authError || !user) {
+  if (error || !user) {
     return { error: "Sesi telah berakhir atau Anda belum login. Silakan login kembali." };
   }
 
+  return { supabase };
+}
+
+// Membaca dan memvalidasi field produk. Mengembalikan { produk } atau { error }.
+function bacaFormProduk(formData) {
   const ambil = (nama) => formData?.get(nama)?.toString()?.trim() ?? "";
   const nama = ambil("nama");
   const harga = Number(ambil("harga"));
@@ -90,19 +95,60 @@ export async function tambahProduk(prevState, formData) {
     return { error: "Harga harus berupa bilangan bulat, minimal 0." };
   }
 
-  const { error } = await supabase.from("produk").insert({
-    nama,
-    harga,
-    kategori: ambil("kategori") || null,
-    foto_url: ambil("foto_url") || null,
-    deskripsi: ambil("deskripsi") || null,
-  });
+  return {
+    produk: {
+      nama,
+      harga,
+      kategori: ambil("kategori") || null,
+      foto_url: ambil("foto_url") || null,
+      deskripsi: ambil("deskripsi") || null,
+    },
+  };
+}
+
+export async function tambahProduk(prevState, formData) {
+  const { supabase, error: errorLogin } = await periksaAdmin();
+  if (errorLogin) return { error: errorLogin };
+
+  const { produk, error: errorForm } = bacaFormProduk(formData);
+  if (errorForm) return { error: errorForm };
+
+  const { error } = await supabase.from("produk").insert(produk);
 
   if (error) {
     return { error: "Gagal menyimpan produk. Coba lagi." };
   }
 
   revalidatePath("/");
+  revalidatePath("/admin");
+  redirect("/admin");
+}
+
+// Dipakai dengan .bind(null, id) dari halaman ubah.
+export async function ubahProduk(id, prevState, formData) {
+  const { supabase, error: errorLogin } = await periksaAdmin();
+  if (errorLogin) return { error: errorLogin };
+
+  const idProduk = Number(id);
+  if (!Number.isInteger(idProduk) || idProduk <= 0) {
+    return { error: "Produk tidak valid." };
+  }
+
+  const { produk, error: errorForm } = bacaFormProduk(formData);
+  if (errorForm) return { error: errorForm };
+
+  const { data, error } = await supabase
+    .from("produk")
+    .update(produk)
+    .eq("id", idProduk)
+    .select("id");
+
+  if (error || !data?.length) {
+    return { error: "Gagal menyimpan perubahan. Produk mungkin sudah dihapus." };
+  }
+
+  revalidatePath("/");
+  revalidatePath(`/produk/${idProduk}`);
   revalidatePath("/admin");
   redirect("/admin");
 }

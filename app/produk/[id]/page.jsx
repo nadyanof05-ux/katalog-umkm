@@ -1,14 +1,40 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import TombolWhatsApp from "@/components/TombolWhatsApp";
-import { cariProdukContoh } from "@/lib/data-contoh";
+import { buatKlienPublik } from "@/lib/supabase/publik";
 import { formatRupiah } from "@/lib/format";
 
-// US-02: halaman ini masih memakai data contoh.
-// Tugas peserta: ambil satu produk dari Supabase berdasarkan id, di sisi server.
+// Selalu ambil data terbaru dari database.
+export const dynamic = "force-dynamic";
+
+// US-02: ambil satu produk dari Supabase di sisi server.
+async function ambilProduk(id) {
+  const idProduk = Number(id);
+  if (!Number.isInteger(idProduk) || idProduk <= 0) return null;
+
+  try {
+    const supabase = buatKlienPublik();
+    const { data, error } = await supabase
+      .from("produk")
+      .select("id, nama, harga, deskripsi, foto_url, kategori, created_at")
+      .eq("id", idProduk)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Gagal mengambil detail produk:", error.message);
+      return null;
+    }
+
+    return data;
+  } catch (err) {
+    console.error("Kesalahan koneksi Supabase:", err.message);
+    return null;
+  }
+}
+
 export default async function HalamanDetailProduk({ params }) {
   const { id } = await params;
-  const produk = cariProdukContoh(id);
+  const produk = await ambilProduk(id);
 
   if (!produk) {
     notFound();

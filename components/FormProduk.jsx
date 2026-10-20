@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import Link from "next/link";
 import { buatDeskripsi } from "@/app/admin/actions";
 import { periksaFile, FOTO_MAKS, UKURAN_UNGGAH_MAKS } from "@/lib/foto";
 import Input from "@/components/Input";
@@ -10,12 +11,17 @@ import Tombol from "@/components/Tombol";
 // Nama field sama dengan kolom tabel "produk".
 const tanpaAksi = async () => null;
 
-export default function FormProduk({ produk = {}, labelTombol, action }) {
+export default function FormProduk({ produk = {}, daftarKategori = [], labelTombol, action }) {
   const [state, formAction, isPending] = useActionState(action ?? tanpaAksi, null);
   const [deskripsi, setDeskripsi] = useState(produk.deskripsi ?? "");
   const [sedangBuat, setSedangBuat] = useState(false);
   const [pesanAi, setPesanAi] = useState("");
 
+  // Kategori lama yang belum ada di daftar tetap muncul supaya tidak hilang diam-diam.
+  const opsiKategori =
+    produk.kategori && !daftarKategori.includes(produk.kategori)
+      ? [...daftarKategori, produk.kategori]
+      : daftarKategori;
   const [pesanFile, setPesanFile] = useState("");
 
   // US-29: cek cepat di browser; server tetap memeriksa ulang.
@@ -90,7 +96,28 @@ export default function FormProduk({ produk = {}, labelTombol, action }) {
         defaultValue={produk.stok ?? 1}
         required
       />
-      <Input label="Kategori" name="kategori" defaultValue={produk.kategori} />
+      <label className="flex flex-col gap-1.5 text-sm font-semibold">
+        Kategori
+        <select
+          name="kategori"
+          defaultValue={produk.kategori ?? ""}
+          className="w-full rounded-lg border border-garis bg-latar px-3 py-2.5 text-base text-teks focus:border-utama focus:outline-none"
+        >
+          <option value="">Tanpa kategori</option>
+          {opsiKategori.map((nama) => (
+            <option key={nama} value={nama}>
+              {nama}
+            </option>
+          ))}
+        </select>
+        <span className="text-xs font-normal text-teks-lembut">
+          Kelola daftar di menu{" "}
+          <Link href="/admin/kategori" className="underline underline-offset-4">
+            Kategori
+          </Link>
+          .
+        </span>
+      </label>
       <Input
         label="Link foto (satu link per baris, maksimal 6; yang pertama jadi foto utama)"
         name="foto_url"

@@ -15,6 +15,16 @@
 | `badge` | text | Label produk (US-20): kosong, "Baru", atau "Terlaris" |
 | `created_at` | timestamptz | Waktu dibuat, otomatis |
 
+## Tabel `kategori` (US-31)
+
+| Kolom | Tipe | Keterangan |
+| --- | --- | --- |
+| `id` | bigint | Nomor unik, dibuat otomatis |
+| `nama` | text | Nama kategori, unik tanpa membedakan huruf besar atau kecil, 1 sampai 40 karakter |
+| `created_at` | timestamptz | Waktu dibuat, otomatis |
+
+`produk.kategori` tetap berisi nama kategori. RLS aktif: hanya admin yang login yang boleh membaca dan mengubah.
+
 ## Aturan akses (RLS)
 
 Row Level Security aktif di tabel `produk`.

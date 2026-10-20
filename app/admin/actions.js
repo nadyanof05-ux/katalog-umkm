@@ -88,6 +88,13 @@ async function periksaAdmin() {
   return { supabase };
 }
 
+// Kategori produk harus ada di daftar kategori (US-31). Kosong berarti tanpa kategori.
+async function periksaKategoriProduk(supabase, nama) {
+  if (!nama) return null;
+  const { data } = await supabase.from("kategori").select("id").eq("nama", nama).maybeSingle();
+  return data ? null : "Kategori tidak ditemukan. Tambahkan dulu di menu Kategori.";
+}
+
 // Membaca dan memvalidasi field produk. Mengembalikan { produk } atau { error }.
 function bacaFormProduk(formData) {
   const ambil = (nama) => formData?.get(nama)?.toString()?.trim() ?? "";
@@ -225,6 +232,9 @@ export async function tambahProduk(prevState, formData) {
   const { produk, error: errorForm } = bacaFormProduk(formData);
   if (errorForm) return { error: errorForm };
 
+  const errorKategori = await periksaKategoriProduk(supabase, produk.kategori);
+  if (errorKategori) return { error: errorKategori };
+
   const { error: errorFoto } = await unggahFotoProduk(produk, formData);
   if (errorFoto) return { error: errorFoto };
 
@@ -251,6 +261,9 @@ export async function ubahProduk(id, prevState, formData) {
 
   const { produk, error: errorForm } = bacaFormProduk(formData);
   if (errorForm) return { error: errorForm };
+
+  const errorKategori = await periksaKategoriProduk(supabase, produk.kategori);
+  if (errorKategori) return { error: errorKategori };
 
   const { error: errorFoto } = await unggahFotoProduk(produk, formData);
   if (errorFoto) return { error: errorFoto };
@@ -291,6 +304,111 @@ export async function hapusProduk(id, prevState, formData) {
   revalidatePath(`/produk/${idProduk}`);
   revalidatePath("/admin");
   return { success: "Produk dihapus." };
+}
+
+// US-31: kelola kategori. Semua aksi memeriksa login admin di server.
+function bacaNamaKategori(formData) {
+  const nama = formData?.get("nama")?.toString()?.replace(/\s+/g, " ").trim() ?? "";
+  if (!nama) return { error: "Nama kategori wajib diisi." };
+  if (nama.length > 40) return { error: "Nama kategori maksimal 40 karakter." };
+  return { nama };
+}
+
+const segarkanKategori = () => {
+  revalidatePath("/admin/kategori");
+  revalidatePath("/admin");
+  revalidatePath("/");
+};
+
+export async function tambahKategori(prevState, formData) {
+  const { supabase, error: errorLogin } = await periksaAdmin();
+  if (errorLogin) return { error: errorLogin };
+
+  const { nama, error: errorNama } = bacaNamaKategori(formData);
+  if (errorNama) return { error: errorNama };
+
+  const { error } = await supabase.from("kategori").insert({ nama });
+  if (error) {
+    return {
+      error: error.code === "23505" ? "Kategori itu sudah ada." : "Gagal menambah kategori.",
+    };
+  }
+
+  segarkanKategori();
+  return { success: `Kategori "${nama}" ditambahkan.` };
+}
+
+// Dipakai dengan .bind(null, id). Produk yang memakai kategori ini ikut diperbarui.
+export async function ubahKategori(id, prevState, formData) {
+  const { supabase, error: errorLogin } = await periksaAdmin();
+  if (errorLogin) return { error: errorLogin };
+
+  const idKategori = Number(id);
+  if (!Number.isInteger(idKategori) || idKategori <= 0) return { error: "Kategori tidak valid." };
+
+  const { nama, error: errorNama } = bacaNamaKategori(formData);
+  if (errorNama) return { error: errorNama };
+
+  const { data: lama } = await supabase
+    .from("kategori")
+    .select("nama")
+    .eq("id", idKategori)
+    .maybeSingle();
+  if (!lama) return { error: "Kategori tidak ditemukan." };
+  if (lama.nama === nama) return { success: "Tidak ada perubahan." };
+
+  const { error } = await supabase.from("kategori").update({ nama }).eq("id", idKategori);
+  if (error) {
+    return {
+      error: error.code === "23505" ? "Kategori itu sudah ada." : "Gagal mengubah kategori.",
+    };
+  }
+
+  const { error: errorProduk } = await supabase
+    .from("produk")
+    .update({ kategori: nama })
+    .eq("kategori", lama.nama);
+  if (errorProduk) {
+    // Kembalikan nama lama supaya kategori dan produk tidak berbeda.
+    await supabase.from("kategori").update({ nama: lama.nama }).eq("id", idKategori);
+    return { error: "Gagal memperbarui produk yang memakai kategori ini. Perubahan dibatalkan." };
+  }
+
+  segarkanKategori();
+  return { success: `Nama kategori diubah menjadi "${nama}".` };
+}
+
+// Dipakai dengan .bind(null, id). Ditolak jika masih dipakai produk.
+export async function hapusKategori(id, prevState, formData) {
+  const { supabase, error: errorLogin } = await periksaAdmin();
+  if (errorLogin) return { error: errorLogin };
+
+  const idKategori = Number(id);
+  if (!Number.isInteger(idKategori) || idKategori <= 0) return { error: "Kategori tidak valid." };
+
+  const { data: kategori } = await supabase
+    .from("kategori")
+    .select("nama")
+    .eq("id", idKategori)
+    .maybeSingle();
+  if (!kategori) return { error: "Kategori tidak ditemukan." };
+
+  const { count, error: errorHitung } = await supabase
+    .from("produk")
+    .select("id", { count: "exact", head: true })
+    .eq("kategori", kategori.nama);
+  if (errorHitung) return { error: "Gagal memeriksa produk yang memakai kategori ini." };
+  if (count > 0) {
+    return {
+      error: `Tidak bisa dihapus: masih dipakai ${count} produk. Pindahkan atau ubah kategori produknya dulu.`,
+    };
+  }
+
+  const { data, error } = await supabase.from("kategori").delete().eq("id", idKategori).select("id");
+  if (error || !data?.length) return { error: "Gagal menghapus kategori." };
+
+  segarkanKategori();
+  return { success: "Kategori dihapus." };
 }
 
 // US-14: membuat deskripsi produk dengan Gemini API. Dipanggil dari server;

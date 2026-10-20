@@ -16,7 +16,8 @@ export async function ambilProdukKeranjang(daftarId) {
     const { data, error } = await supabase
       .from("produk")
       .select("id, nama, harga, foto_url, stok, harga_diskon")
-      .in("id", ids);
+      .in("id", ids)
+      .eq("aktif", true); // produk nonaktif dianggap sudah tidak tersedia
 
     if (error) {
       console.error("Gagal mengambil produk keranjang:", error.message);

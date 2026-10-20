@@ -11,6 +11,7 @@
 | `foto_url` | text | Link gambar produk |
 | `kategori` | text | Kelompok produk, misalnya "Camilan" |
 | `stok` | integer | Jumlah stok (US-19). 0 berarti habis, bawaan 1 |
+| `aktif` | boolean | Status tampil (US-32). `false` = disembunyikan dari katalog publik, bawaan `true` |
 | `harga_diskon` | integer | Harga setelah diskon (US-20). Kosong = tidak diskon; harus lebih kecil dari `harga` |
 | `badge` | text | Label produk (US-20): kosong, "Baru", atau "Terlaris" |
 | `created_at` | timestamptz | Waktu dibuat, otomatis |

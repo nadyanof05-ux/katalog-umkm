@@ -23,6 +23,7 @@ const PER_HALAMAN = 12;
 
 // US-11: penyaringan dilakukan di server lewat query string (?q=...&kategori=...).
 const terapkanFilter = (query, { q, kategori }) => {
+  query = query.eq("aktif", true); // US-32: produk nonaktif tidak tampil di katalog publik
   if (kategori) query = query.eq("kategori", kategori);
   if (q) query = query.ilike("nama", `%${escapeLike(q)}%`);
   return query;
@@ -71,7 +72,7 @@ function daftarNomorHalaman(aktif, total) {
 async function ambilKategori() {
   try {
     const supabase = buatKlienPublik();
-    const { data } = await supabase.from("produk").select("kategori");
+    const { data } = await supabase.from("produk").select("kategori").eq("aktif", true);
     const unik = new Set((data ?? []).map((baris) => baris.kategori).filter(Boolean));
     return [...unik].sort((a, b) => a.localeCompare(b, "id"));
   } catch {

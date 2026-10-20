@@ -22,6 +22,7 @@ async function ambilProduk(id) {
       .from("produk")
       .select("id, nama, harga, deskripsi, foto_url, kategori, stok, harga_diskon, badge, created_at")
       .eq("id", idProduk)
+      .eq("aktif", true) // US-32: produk nonaktif tampil sebagai "tidak ditemukan"
       .maybeSingle();
 
     if (error) {
@@ -49,6 +50,7 @@ async function ambilProdukTerkait(produk) {
       .select("id, nama, harga, deskripsi, foto_url, kategori, stok, harga_diskon, badge, created_at")
       .eq("kategori", produk.kategori)
       .neq("id", produk.id)
+      .eq("aktif", true)
       .order("created_at", { ascending: false })
       .order("id", { ascending: false })
       .limit(JUMLAH_TERKAIT);

@@ -17,6 +17,10 @@ create table if not exists public.produk (
 alter table public.produk
   add column if not exists stok integer not null default 1 check (stok >= 0);
 
+-- Status tampil (US-32). false = disembunyikan dari katalog publik tanpa menghapus produk.
+alter table public.produk
+  add column if not exists aktif boolean not null default true;
+
 -- Harga diskon dan badge (US-20). harga_diskon kosong = tidak diskon; badge kosong, "Baru", atau "Terlaris".
 alter table public.produk
   add column if not exists harga_diskon integer

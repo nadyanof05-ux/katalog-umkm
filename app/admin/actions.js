@@ -284,6 +284,32 @@ export async function ubahProduk(id, prevState, formData) {
   redirect("/admin");
 }
 
+// Dipakai dengan .bind(null, id, aktifBaru) dari tombol aktif/nonaktif (US-32).
+export async function aturAktifProduk(id, aktif, prevState, formData) {
+  const { supabase, error: errorLogin } = await periksaAdmin();
+  if (errorLogin) return { error: errorLogin };
+
+  const idProduk = Number(id);
+  if (!Number.isInteger(idProduk) || idProduk <= 0 || typeof aktif !== "boolean") {
+    return { error: "Permintaan tidak valid." };
+  }
+
+  const { data, error } = await supabase
+    .from("produk")
+    .update({ aktif })
+    .eq("id", idProduk)
+    .select("id");
+
+  if (error || !data?.length) {
+    return { error: "Gagal mengubah status produk." };
+  }
+
+  revalidatePath("/");
+  revalidatePath(`/produk/${idProduk}`);
+  revalidatePath("/admin");
+  return { success: aktif ? "Produk ditampilkan." : "Produk disembunyikan." };
+}
+
 // Dipakai dengan .bind(null, id) dari tombol hapus.
 export async function hapusProduk(id, prevState, formData) {
   const { supabase, error: errorLogin } = await periksaAdmin();

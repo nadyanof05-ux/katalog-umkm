@@ -14,7 +14,7 @@ export default async function HalamanAdmin() {
     const supabase = await buatKlienAdmin();
     const { data, error } = await supabase
       .from("produk")
-      .select("id, nama, harga, deskripsi, foto_url, kategori, stok, harga_diskon, badge, created_at")
+      .select("id, nama, harga, deskripsi, foto_url, kategori, stok, harga_diskon, badge, aktif, created_at")
       .order("created_at", { ascending: false });
 
     if (!error && data) {
@@ -23,7 +23,7 @@ export default async function HalamanAdmin() {
       const klienPublik = buatKlienPublik();
       const res = await klienPublik
         .from("produk")
-        .select("id, nama, harga, deskripsi, foto_url, kategori, stok, harga_diskon, badge, created_at")
+        .select("id, nama, harga, deskripsi, foto_url, kategori, stok, harga_diskon, badge, aktif, created_at")
         .order("created_at", { ascending: false });
       daftarProduk = res.data ?? [];
     }
@@ -33,7 +33,7 @@ export default async function HalamanAdmin() {
       const klienPublik = buatKlienPublik();
       const res = await klienPublik
         .from("produk")
-        .select("id, nama, harga, deskripsi, foto_url, kategori, stok, harga_diskon, badge, created_at")
+        .select("id, nama, harga, deskripsi, foto_url, kategori, stok, harga_diskon, badge, aktif, created_at")
         .order("created_at", { ascending: false });
       daftarProduk = res.data ?? [];
     } catch {

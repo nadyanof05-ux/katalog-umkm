@@ -153,6 +153,28 @@ export async function ubahProduk(id, prevState, formData) {
   redirect("/admin");
 }
 
+// Dipakai dengan .bind(null, id) dari tombol hapus.
+export async function hapusProduk(id, prevState, formData) {
+  const { supabase, error: errorLogin } = await periksaAdmin();
+  if (errorLogin) return { error: errorLogin };
+
+  const idProduk = Number(id);
+  if (!Number.isInteger(idProduk) || idProduk <= 0) {
+    return { error: "Produk tidak valid." };
+  }
+
+  const { data, error } = await supabase.from("produk").delete().eq("id", idProduk).select("id");
+
+  if (error || !data?.length) {
+    return { error: "Gagal menghapus produk. Produk mungkin sudah dihapus." };
+  }
+
+  revalidatePath("/");
+  revalidatePath(`/produk/${idProduk}`);
+  revalidatePath("/admin");
+  return { success: "Produk dihapus." };
+}
+
 export const login = masuk;
 export const logout = keluar;
 export const ubahPassword = gantiPassword;

@@ -17,6 +17,15 @@ create table if not exists public.produk (
 alter table public.produk
   add column if not exists stok integer not null default 1 check (stok >= 0);
 
+-- Harga diskon dan badge (US-20). harga_diskon kosong = tidak diskon; badge kosong, "Baru", atau "Terlaris".
+alter table public.produk
+  add column if not exists harga_diskon integer
+    check (harga_diskon is null or (harga_diskon >= 0 and harga_diskon < harga));
+
+alter table public.produk
+  add column if not exists badge text
+    check (badge is null or badge in ('Baru', 'Terlaris'));
+
 -- 2. Row Level Security
 -- Tidak ada izin untuk publik: akses langsung ke tabel dari luar aplikasi ditolak.
 -- Hanya admin yang sudah login yang boleh membaca dan mengubah data.

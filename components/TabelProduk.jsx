@@ -1,4 +1,5 @@
-import { formatRupiah } from "@/lib/format";
+import HargaProduk from "@/components/HargaProduk";
+import BadgeProduk from "@/components/BadgeProduk";
 import { fotoUtama } from "@/lib/foto";
 import Tombol from "@/components/Tombol";
 import TombolHapus from "@/components/TombolHapus";
@@ -25,10 +26,13 @@ export default function TabelProduk({ daftarProduk }) {
                 <div className="flex items-center gap-3">
                   <img src={fotoUtama(produk.foto_url)} alt="" className="h-10 w-10 rounded-md object-cover" />
                   <span className="font-semibold">{produk.nama}</span>
+                  <BadgeProduk badge={produk.badge} />
                 </div>
               </td>
               <td className="px-4 py-3 text-teks-lembut">{produk.kategori}</td>
-              <td className="px-4 py-3">{formatRupiah(produk.harga)}</td>
+              <td className="px-4 py-3">
+                <HargaProduk produk={produk} />
+              </td>
               <td className={`px-4 py-3 ${produk.stok <= 0 ? "font-semibold text-bahaya" : ""}`}>
                 {produk.stok <= 0 ? "Habis" : produk.stok}
               </td>

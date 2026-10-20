@@ -96,6 +96,20 @@ function bacaFormProduk(formData) {
     return { error: "Harga harus berupa bilangan bulat, minimal 0." };
   }
 
+  const teksDiskon = ambil("harga_diskon");
+  const hargaDiskon = teksDiskon === "" ? null : Number(teksDiskon);
+  if (hargaDiskon !== null && (!Number.isInteger(hargaDiskon) || hargaDiskon < 0)) {
+    return { error: "Harga diskon harus berupa bilangan bulat, minimal 0." };
+  }
+  if (hargaDiskon !== null && hargaDiskon >= harga) {
+    return { error: "Harga diskon harus lebih kecil dari harga normal." };
+  }
+
+  const badge = ambil("badge") || null;
+  if (badge !== null && !["Baru", "Terlaris"].includes(badge)) {
+    return { error: "Badge tidak valid." };
+  }
+
   const stok = Number(ambil("stok"));
   if (ambil("stok") === "" || !Number.isInteger(stok) || stok < 0) {
     return { error: "Stok harus berupa bilangan bulat, minimal 0." };
@@ -114,6 +128,8 @@ function bacaFormProduk(formData) {
       nama,
       harga,
       stok,
+      harga_diskon: hargaDiskon,
+      badge,
       kategori: ambil("kategori") || null,
       foto_url: foto.length ? foto.join("\n") : null,
       deskripsi: ambil("deskripsi") || null,

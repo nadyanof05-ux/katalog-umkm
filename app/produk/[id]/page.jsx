@@ -4,7 +4,8 @@ import KartuProduk from "@/components/KartuProduk";
 import GaleriFoto from "@/components/GaleriFoto";
 import TombolWhatsApp from "@/components/TombolWhatsApp";
 import { buatKlienPublik } from "@/lib/supabase/publik";
-import { formatRupiah } from "@/lib/format";
+import BadgeProduk from "@/components/BadgeProduk";
+import HargaProduk from "@/components/HargaProduk";
 import { daftarFoto } from "@/lib/foto";
 
 // Selalu ambil data terbaru dari database.
@@ -19,7 +20,7 @@ async function ambilProduk(id) {
     const supabase = buatKlienPublik();
     const { data, error } = await supabase
       .from("produk")
-      .select("id, nama, harga, deskripsi, foto_url, kategori, stok, created_at")
+      .select("id, nama, harga, deskripsi, foto_url, kategori, stok, harga_diskon, badge, created_at")
       .eq("id", idProduk)
       .maybeSingle();
 
@@ -45,7 +46,7 @@ async function ambilProdukTerkait(produk) {
     const supabase = buatKlienPublik();
     const { data, error } = await supabase
       .from("produk")
-      .select("id, nama, harga, deskripsi, foto_url, kategori, stok, created_at")
+      .select("id, nama, harga, deskripsi, foto_url, kategori, stok, harga_diskon, badge, created_at")
       .eq("kategori", produk.kategori)
       .neq("id", produk.id)
       .order("created_at", { ascending: false })
@@ -82,11 +83,12 @@ export default async function HalamanDetailProduk({ params }) {
           <Link href="/" className="text-sm text-teks-lembut underline underline-offset-4 hover:text-utama">
             Kembali ke katalog
           </Link>
-          <p className="text-sm text-teks-lembut">{produk.kategori}</p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm text-teks-lembut">{produk.kategori}</p>
+            <BadgeProduk badge={produk.badge} />
+          </div>
           <h1 className="text-3xl font-extrabold leading-tight tracking-tight">{produk.nama}</h1>
-          <p className="self-start rounded-md bg-harga-latar px-3 py-1 text-xl font-bold text-harga">
-            {formatRupiah(produk.harga)}
-          </p>
+          <HargaProduk produk={produk} besar />
           <p className="max-w-prose leading-relaxed text-teks-lembut">{produk.deskripsi}</p>
           <TombolWhatsApp produk={produk} />
         </div>

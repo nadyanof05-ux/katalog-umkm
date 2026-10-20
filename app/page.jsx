@@ -46,7 +46,7 @@ async function ambilProduk(filter, { urutan, halaman }) {
   const { data, error } = await terapkanFilter(
     supabase
       .from("produk")
-      .select("id, nama, harga, deskripsi, foto_url, kategori, stok, created_at")
+      .select("id, nama, harga, deskripsi, foto_url, kategori, stok, harga_diskon, badge, created_at")
       .order(URUTAN[urutan].kolom, { ascending: URUTAN[urutan].naik })
       .order("id", { ascending: false })
       .range(dari, dari + PER_HALAMAN - 1),

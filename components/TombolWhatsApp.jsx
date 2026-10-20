@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toko } from "@/lib/toko";
 import { formatRupiah } from "@/lib/format";
+import { hargaAkhir } from "@/lib/harga";
 
 const JUMLAH_MAKS = 99;
 
@@ -31,11 +32,12 @@ export default function TombolWhatsApp({ produk }) {
   const atur = (nilai) => setJumlah(Math.min(JUMLAH_MAKS, Math.max(1, nilai)));
 
   const nomor = (toko.nomorWhatsApp || "").replace(/\D/g, "");
-  const total = produk.harga * jumlah;
+  const hargaSatuan = hargaAkhir(produk);
+  const total = hargaSatuan * jumlah;
   const pesan =
     `Halo, saya ingin memesan ${produk.nama}.\n` +
     `Jumlah: ${jumlah}\n` +
-    `Harga satuan: ${formatRupiah(produk.harga)}\n` +
+    `Harga satuan: ${formatRupiah(hargaSatuan)}\n` +
     `Total: ${formatRupiah(total)}`;
   const href = `https://wa.me/${nomor}?text=${encodeURIComponent(pesan)}`;
 

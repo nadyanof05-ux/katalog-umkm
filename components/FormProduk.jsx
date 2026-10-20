@@ -47,9 +47,10 @@ export default function FormProduk({ produk = {}, labelTombol, action }) {
       />
       <Input label="Kategori" name="kategori" defaultValue={produk.kategori} />
       <Input
-        label="Link foto"
+        label="Link foto (satu link per baris, maksimal 6; yang pertama jadi foto utama)"
         name="foto_url"
-        placeholder="https://... atau /produk/nama-file.svg"
+        textarea
+        placeholder={"https://...\n/produk/nama-file.svg"}
         defaultValue={produk.foto_url}
       />
       <Input

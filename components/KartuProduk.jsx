@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { formatRupiah } from "@/lib/format";
+import { fotoUtama } from "@/lib/foto";
 
 export default function KartuProduk({ produk }) {
   return (
@@ -8,7 +9,7 @@ export default function KartuProduk({ produk }) {
       className="group flex flex-col overflow-hidden rounded-2xl border border-garis bg-latar"
     >
       <img
-        src={produk.foto_url}
+        src={fotoUtama(produk.foto_url)}
         alt={produk.nama}
         className="aspect-square w-full bg-permukaan object-cover"
       />

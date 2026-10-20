@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { buatKlienAdmin } from "@/lib/supabase/admin";
+import { daftarFoto, FOTO_MAKS } from "@/lib/foto";
 
 export async function masuk(prevState, formData) {
   const data = formData instanceof FormData ? formData : prevState;
@@ -95,12 +96,20 @@ function bacaFormProduk(formData) {
     return { error: "Harga harus berupa bilangan bulat, minimal 0." };
   }
 
+  const foto = daftarFoto(formData?.get("foto_url")?.toString());
+  if (foto.length > FOTO_MAKS) {
+    return { error: `Foto maksimal ${FOTO_MAKS} link.` };
+  }
+  if (foto.some((link) => !/^(https?:\/\/|\/)/i.test(link))) {
+    return { error: "Setiap link foto harus diawali http://, https://, atau /." };
+  }
+
   return {
     produk: {
       nama,
       harga,
       kategori: ambil("kategori") || null,
-      foto_url: ambil("foto_url") || null,
+      foto_url: foto.length ? foto.join("\n") : null,
       deskripsi: ambil("deskripsi") || null,
     },
   };

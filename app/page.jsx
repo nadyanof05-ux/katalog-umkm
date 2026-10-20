@@ -1,15 +1,14 @@
 import { redirect } from "next/navigation";
 import KartuProduk from "@/components/KartuProduk";
 import Input from "@/components/Input";
+import Paginasi from "@/components/Paginasi";
 import Tombol from "@/components/Tombol";
 import { buatKlienPublik } from "@/lib/supabase/publik";
+import { escapeLike } from "@/lib/paginasi";
 import { toko } from "@/lib/toko";
 
 // Selalu ambil data terbaru dari database.
 export const dynamic = "force-dynamic";
-
-// Escape karakter khusus pola LIKE supaya "%" dan "_" dicari apa adanya.
-const escapeLike = (teks) => teks.replace(/[\\%_]/g, "\\$&");
 
 // US-15: pilihan urutan, diterapkan di query ke database. Nilai lain jatuh ke "terbaru".
 const URUTAN = {
@@ -55,18 +54,6 @@ async function ambilProduk(filter, { urutan, halaman }) {
   );
   if (error) throw error;
   return data ?? [];
-}
-
-// Nomor halaman yang ditampilkan: awal, akhir, dan sekitar halaman aktif ("..." untuk celah).
-function daftarNomorHalaman(aktif, total) {
-  const nomor = new Set([1, total, aktif - 1, aktif, aktif + 1]);
-  const urut = [...nomor].filter((n) => n >= 1 && n <= total).sort((a, b) => a - b);
-  const hasil = [];
-  urut.forEach((n, i) => {
-    if (i > 0 && n - urut[i - 1] > 1) hasil.push("...");
-    hasil.push(n);
-  });
-  return hasil;
 }
 
 async function ambilKategori() {
@@ -204,39 +191,13 @@ export default async function HalamanKatalog({ searchParams }) {
             ))}
           </div>
         )}
-        {!error && totalHalaman > 1 && (
-          <nav aria-label="Navigasi halaman" className="flex flex-col items-center gap-3 pb-4">
-            <p className="text-sm text-teks-lembut">
-              Halaman {halaman} dari {totalHalaman} ({totalProduk} produk)
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              {halaman > 1 && (
-                <Tombol href={buatUrl(halaman - 1)} varian="garis">
-                  Sebelumnya
-                </Tombol>
-              )}
-              {daftarNomorHalaman(halaman, totalHalaman).map((n, i) =>
-                n === "..." ? (
-                  <span key={`celah-${i}`} className="px-1 text-teks-lembut">
-                    ...
-                  </span>
-                ) : (
-                  <Tombol
-                    key={n}
-                    href={buatUrl(n)}
-                    varian={n === halaman ? "utama" : "garis"}
-                  >
-                    {n}
-                  </Tombol>
-                ),
-              )}
-              {halaman < totalHalaman && (
-                <Tombol href={buatUrl(halaman + 1)} varian="garis">
-                  Berikutnya
-                </Tombol>
-              )}
-            </div>
-          </nav>
+        {!error && (
+          <Paginasi
+            halaman={halaman}
+            totalHalaman={totalHalaman}
+            totalProduk={totalProduk}
+            buatUrl={buatUrl}
+          />
         )}
       </section>
     </>

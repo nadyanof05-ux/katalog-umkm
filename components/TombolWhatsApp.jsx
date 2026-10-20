@@ -1,15 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { toko } from "@/lib/toko";
 import { formatRupiah } from "@/lib/format";
 import { hargaAkhir } from "@/lib/harga";
+import { tambahKeKeranjang } from "@/lib/keranjang";
 
 const JUMLAH_MAKS = 99;
 
 // US-12: pengunjung memilih jumlah; jumlah dan total ikut tertulis di pesan WhatsApp.
 export default function TombolWhatsApp({ produk }) {
   const [jumlah, setJumlah] = useState(1);
+  const [ditambahkan, setDitambahkan] = useState(false);
 
   if (!produk) return null;
 
@@ -82,14 +85,34 @@ export default function TombolWhatsApp({ produk }) {
         </div>
         <p className="text-sm text-teks-lembut">Total: {formatRupiah(total)}</p>
       </div>
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex w-full items-center justify-center rounded-lg bg-utama px-5 py-3 font-semibold text-white hover:bg-utama-gelap sm:w-auto sm:self-start"
-      >
-        Pesan via WhatsApp
-      </a>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <button
+          type="button"
+          onClick={() => {
+            tambahKeKeranjang(produk.id, jumlah);
+            setDitambahkan(true);
+          }}
+          className="inline-flex w-full items-center justify-center rounded-lg border border-utama bg-latar px-5 py-3 font-semibold text-utama hover:bg-permukaan sm:w-auto"
+        >
+          Tambah ke keranjang
+        </button>
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex w-full items-center justify-center rounded-lg bg-utama px-5 py-3 font-semibold text-white hover:bg-utama-gelap sm:w-auto"
+        >
+          Pesan via WhatsApp
+        </a>
+      </div>
+      {ditambahkan && (
+        <p role="status" className="text-sm font-medium text-utama">
+          Ditambahkan ke keranjang.{" "}
+          <Link href="/keranjang" className="underline underline-offset-4">
+            Lihat keranjang
+          </Link>
+        </p>
+      )}
     </div>
   );
 }

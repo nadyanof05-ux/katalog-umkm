@@ -12,6 +12,7 @@ export default function TabelProduk({ daftarProduk }) {
             <th className="px-4 py-3 font-semibold">Produk</th>
             <th className="px-4 py-3 font-semibold">Kategori</th>
             <th className="px-4 py-3 font-semibold">Harga</th>
+            <th className="px-4 py-3 font-semibold">Stok</th>
             <th className="px-4 py-3 font-semibold">
               <span className="sr-only">Aksi</span>
             </th>
@@ -28,6 +29,9 @@ export default function TabelProduk({ daftarProduk }) {
               </td>
               <td className="px-4 py-3 text-teks-lembut">{produk.kategori}</td>
               <td className="px-4 py-3">{formatRupiah(produk.harga)}</td>
+              <td className={`px-4 py-3 ${produk.stok <= 0 ? "font-semibold text-bahaya" : ""}`}>
+                {produk.stok <= 0 ? "Habis" : produk.stok}
+              </td>
               <td className="px-4 py-3">
                 <div className="flex justify-end gap-2">
                   {/* US-09 dan US-10: ubah dan hapus produk */}

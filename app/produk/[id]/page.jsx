@@ -19,7 +19,7 @@ async function ambilProduk(id) {
     const supabase = buatKlienPublik();
     const { data, error } = await supabase
       .from("produk")
-      .select("id, nama, harga, deskripsi, foto_url, kategori, created_at")
+      .select("id, nama, harga, deskripsi, foto_url, kategori, stok, created_at")
       .eq("id", idProduk)
       .maybeSingle();
 
@@ -45,7 +45,7 @@ async function ambilProdukTerkait(produk) {
     const supabase = buatKlienPublik();
     const { data, error } = await supabase
       .from("produk")
-      .select("id, nama, harga, deskripsi, foto_url, kategori, created_at")
+      .select("id, nama, harga, deskripsi, foto_url, kategori, stok, created_at")
       .eq("kategori", produk.kategori)
       .neq("id", produk.id)
       .order("created_at", { ascending: false })

@@ -10,6 +10,7 @@
 | `deskripsi` | text | Penjelasan produk |
 | `foto_url` | text | Link gambar produk |
 | `kategori` | text | Kelompok produk, misalnya "Camilan" |
+| `stok` | integer | Jumlah stok (US-19). 0 berarti habis, bawaan 1 |
 | `created_at` | timestamptz | Waktu dibuat, otomatis |
 
 ## Aturan akses (RLS)

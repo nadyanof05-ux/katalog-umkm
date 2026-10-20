@@ -96,6 +96,11 @@ function bacaFormProduk(formData) {
     return { error: "Harga harus berupa bilangan bulat, minimal 0." };
   }
 
+  const stok = Number(ambil("stok"));
+  if (ambil("stok") === "" || !Number.isInteger(stok) || stok < 0) {
+    return { error: "Stok harus berupa bilangan bulat, minimal 0." };
+  }
+
   const foto = daftarFoto(formData?.get("foto_url")?.toString());
   if (foto.length > FOTO_MAKS) {
     return { error: `Foto maksimal ${FOTO_MAKS} link.` };
@@ -108,6 +113,7 @@ function bacaFormProduk(formData) {
     produk: {
       nama,
       harga,
+      stok,
       kategori: ambil("kategori") || null,
       foto_url: foto.length ? foto.join("\n") : null,
       deskripsi: ambil("deskripsi") || null,

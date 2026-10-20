@@ -13,6 +13,10 @@ create table if not exists public.produk (
   created_at timestamptz not null default now()
 );
 
+-- Stok produk (US-19). 0 berarti habis. Untuk database yang sudah ada, baris ini menambah kolomnya.
+alter table public.produk
+  add column if not exists stok integer not null default 1 check (stok >= 0);
+
 -- 2. Row Level Security
 -- Tidak ada izin untuk publik: akses langsung ke tabel dari luar aplikasi ditolak.
 -- Hanya admin yang sudah login yang boleh membaca dan mengubah data.

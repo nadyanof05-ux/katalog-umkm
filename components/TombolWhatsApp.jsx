@@ -12,6 +12,22 @@ export default function TombolWhatsApp({ produk }) {
 
   if (!produk) return null;
 
+  // US-19: produk habis tidak bisa dipesan.
+  if (produk.stok <= 0) {
+    return (
+      <div className="flex flex-col gap-2">
+        <button
+          type="button"
+          disabled
+          className="inline-flex w-full cursor-not-allowed items-center justify-center rounded-lg bg-permukaan px-5 py-3 font-semibold text-teks-lembut opacity-70 sm:w-auto sm:self-start"
+        >
+          Stok habis
+        </button>
+        <p className="text-sm text-teks-lembut">Produk ini sedang tidak tersedia.</p>
+      </div>
+    );
+  }
+
   const atur = (nilai) => setJumlah(Math.min(JUMLAH_MAKS, Math.max(1, nilai)));
 
   const nomor = (toko.nomorWhatsApp || "").replace(/\D/g, "");

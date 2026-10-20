@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { buatDeskripsi } from "@/app/admin/actions";
+import { periksaFile, FOTO_MAKS, UKURAN_UNGGAH_MAKS } from "@/lib/foto";
 import Input from "@/components/Input";
 import Tombol from "@/components/Tombol";
 
@@ -14,6 +15,22 @@ export default function FormProduk({ produk = {}, labelTombol, action }) {
   const [deskripsi, setDeskripsi] = useState(produk.deskripsi ?? "");
   const [sedangBuat, setSedangBuat] = useState(false);
   const [pesanAi, setPesanAi] = useState("");
+
+  const [pesanFile, setPesanFile] = useState("");
+
+  // US-29: cek cepat di browser; server tetap memeriksa ulang.
+  function periksaPilihanFile(e) {
+    const files = [...e.target.files];
+    const pesan =
+      files.map(periksaFile).find(Boolean) ??
+      (files.reduce((jumlah, f) => jumlah + f.size, 0) > UKURAN_UNGGAH_MAKS
+        ? "Total ukuran foto terlalu besar. Maksimal 4 MB sekali simpan."
+        : files.length > FOTO_MAKS
+          ? `Foto maksimal ${FOTO_MAKS} per produk.`
+          : "");
+    setPesanFile(pesan ?? "");
+    if (pesan) e.target.value = "";
+  }
 
   // US-14: isi kolom deskripsi dengan hasil AI; admin masih bisa mengeditnya sebelum menyimpan.
   async function buatDenganAi(e) {
@@ -81,6 +98,22 @@ export default function FormProduk({ produk = {}, labelTombol, action }) {
         placeholder={"https://...\n/produk/nama-file.svg"}
         defaultValue={produk.foto_url}
       />
+      <label className="flex flex-col gap-1.5 text-sm font-semibold">
+        Unggah foto dari komputer
+        <input
+          type="file"
+          name="foto_file"
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          onChange={periksaPilihanFile}
+          className="w-full rounded-lg border border-garis bg-latar px-3 py-2 text-sm font-normal"
+        />
+        <span className="text-xs font-normal text-teks-lembut">
+          JPG, PNG, atau WebP. Maksimal 2 MB per foto dan 4 MB total. Foto yang diunggah ditambahkan
+          setelah link di atas.
+        </span>
+        {pesanFile && <span className="text-sm font-normal text-bahaya">{pesanFile}</span>}
+      </label>
       <Input
         label="Deskripsi"
         name="deskripsi"

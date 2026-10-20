@@ -3,7 +3,13 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { buatKlienAdmin } from "@/lib/supabase/admin";
-import { daftarFoto, FOTO_MAKS } from "@/lib/foto";
+import { buatKlienPublik } from "@/lib/supabase/publik";
+import {
+  daftarFoto,
+  FOTO_MAKS,
+  periksaFile,
+  UKURAN_UNGGAH_MAKS,
+} from "@/lib/foto";
 
 export async function masuk(prevState, formData) {
   const data = formData instanceof FormData ? formData : prevState;
@@ -137,12 +143,90 @@ function bacaFormProduk(formData) {
   };
 }
 
+// US-29: unggah foto ke Supabase Storage dari server.
+// Memakai kunci server (SUPABASE_SECRET_KEY) setelah login admin diperiksa; kunci tidak sampai ke browser.
+const BUCKET_FOTO = "foto-produk";
+
+// Mengenali tipe gambar dari isi file (bukan hanya dari nama atau tipe yang dikirim browser).
+function tipeDariIsi(bytes) {
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return { tipe: "image/jpeg", ekstensi: "jpg" };
+  if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) {
+    return { tipe: "image/png", ekstensi: "png" };
+  }
+  const kepala = String.fromCharCode(...bytes.slice(0, 4)) + String.fromCharCode(...bytes.slice(8, 12));
+  if (kepala === "RIFFWEBP") return { tipe: "image/webp", ekstensi: "webp" };
+  return null;
+}
+
+async function pastikanBucket(storage) {
+  const { data } = await storage.getBucket(BUCKET_FOTO);
+  if (data) return data.public ? null : "Bucket foto-produk di Supabase harus berstatus Public.";
+
+  const { error } = await storage.createBucket(BUCKET_FOTO, {
+    public: true,
+    fileSizeLimit: 2 * 1024 * 1024,
+    allowedMimeTypes: ["image/jpeg", "image/png", "image/webp"],
+  });
+  return error ? "Gagal menyiapkan penyimpanan foto di Supabase." : null;
+}
+
+// Mengunggah file "foto_file" dari form dan menambahkan URL-nya ke produk.foto_url.
+// Mengembalikan { error } atau {}.
+async function unggahFotoProduk(produk, formData) {
+  const files = formData
+    .getAll("foto_file")
+    .filter((f) => f && typeof f !== "string" && f.size > 0);
+  if (files.length === 0) return {};
+
+  const linkAda = daftarFoto(produk.foto_url);
+  if (linkAda.length + files.length > FOTO_MAKS) {
+    return { error: `Foto maksimal ${FOTO_MAKS} per produk (link dan file digabung).` };
+  }
+
+  for (const file of files) {
+    const pesan = periksaFile(file);
+    if (pesan) return { error: pesan };
+  }
+  if (files.reduce((jumlah, f) => jumlah + f.size, 0) > UKURAN_UNGGAH_MAKS) {
+    return { error: "Total ukuran foto terlalu besar. Maksimal 4 MB sekali simpan." };
+  }
+
+  const isi = [];
+  for (const file of files) {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const jenis = tipeDariIsi(bytes);
+    if (!jenis) return { error: `"${file.name}" bukan gambar JPG, PNG, atau WebP yang valid.` };
+    isi.push({ bytes, ...jenis });
+  }
+
+  const storage = buatKlienPublik().storage;
+  const errorBucket = await pastikanBucket(storage);
+  if (errorBucket) return { error: errorBucket };
+
+  const urlBaru = [];
+  for (const { bytes, tipe, ekstensi } of isi) {
+    const jalur = `${crypto.randomUUID()}.${ekstensi}`;
+    const { error } = await storage.from(BUCKET_FOTO).upload(jalur, bytes, { contentType: tipe });
+    if (error) {
+      console.error("Gagal mengunggah foto:", error.message);
+      return { error: "Gagal mengunggah foto. Coba lagi." };
+    }
+    urlBaru.push(storage.from(BUCKET_FOTO).getPublicUrl(jalur).data.publicUrl);
+  }
+
+  produk.foto_url = [...linkAda, ...urlBaru].join("\n");
+  return {};
+}
+
 export async function tambahProduk(prevState, formData) {
   const { supabase, error: errorLogin } = await periksaAdmin();
   if (errorLogin) return { error: errorLogin };
 
   const { produk, error: errorForm } = bacaFormProduk(formData);
   if (errorForm) return { error: errorForm };
+
+  const { error: errorFoto } = await unggahFotoProduk(produk, formData);
+  if (errorFoto) return { error: errorFoto };
 
   const { error } = await supabase.from("produk").insert(produk);
 
@@ -167,6 +251,9 @@ export async function ubahProduk(id, prevState, formData) {
 
   const { produk, error: errorForm } = bacaFormProduk(formData);
   if (errorForm) return { error: errorForm };
+
+  const { error: errorFoto } = await unggahFotoProduk(produk, formData);
+  if (errorFoto) return { error: errorFoto };
 
   const { data, error } = await supabase
     .from("produk")

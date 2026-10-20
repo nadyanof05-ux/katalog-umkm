@@ -175,6 +175,69 @@ export async function hapusProduk(id, prevState, formData) {
   return { success: "Produk dihapus." };
 }
 
+// US-14: membuat deskripsi produk dengan Gemini API. Dipanggil dari server;
+// kunci (GEMINI_API_KEY) tidak pernah dikirim ke browser.
+const MODEL_GEMINI = "gemini-2.5-flash";
+
+export async function buatDeskripsi(nama, kategori) {
+  const { error: errorLogin } = await periksaAdmin();
+  if (errorLogin) return { error: errorLogin };
+
+  const namaProduk = String(nama ?? "").trim().slice(0, 120);
+  const kategoriProduk = String(kategori ?? "").trim().slice(0, 60);
+
+  if (!namaProduk) {
+    return { error: "Isi nama produk dulu sebelum membuat deskripsi." };
+  }
+
+  const kunci = process.env.GEMINI_API_KEY;
+  if (!kunci) {
+    return { error: "Fitur AI belum dikonfigurasi (GEMINI_API_KEY belum diisi)." };
+  }
+
+  const prompt =
+    "Tulis deskripsi produk singkat dalam bahasa Indonesia untuk katalog toko UMKM. " +
+    "Maksimal 2 kalimat (sekitar 25 sampai 40 kata), ramah dan menarik, tanpa emoji, tanpa judul, " +
+    "dan jangan mengarang fakta spesifik seperti harga, bahan, atau berat yang tidak disebutkan.\n" +
+    `Nama produk: ${namaProduk}\n` +
+    `Kategori: ${kategoriProduk || "(tidak disebutkan)"}`;
+
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_GEMINI}:generateContent`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": kunci },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: 300, thinkingConfig: { thinkingBudget: 0 } },
+        }),
+        signal: AbortSignal.timeout(15000),
+      },
+    );
+
+    if (!res.ok) {
+      console.error("Gemini API gagal:", res.status);
+      return { error: "Gagal membuat deskripsi. Coba lagi sebentar lagi." };
+    }
+
+    const hasil = await res.json();
+    const teks = hasil?.candidates?.[0]?.content?.parts
+      ?.map((bagian) => bagian.text ?? "")
+      .join("")
+      .trim();
+
+    if (!teks) {
+      return { error: "AI tidak menghasilkan deskripsi. Coba lagi." };
+    }
+
+    return { deskripsi: teks };
+  } catch (err) {
+    console.error("Kesalahan memanggil Gemini API:", err.message);
+    return { error: "Gagal menghubungi layanan AI. Coba lagi." };
+  }
+}
+
 export const login = masuk;
 export const logout = keluar;
 export const ubahPassword = gantiPassword;

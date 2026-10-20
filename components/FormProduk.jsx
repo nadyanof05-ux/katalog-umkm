@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
+import { buatDeskripsi } from "@/app/admin/actions";
 import Input from "@/components/Input";
 import Tombol from "@/components/Tombol";
 
@@ -10,6 +11,23 @@ const tanpaAksi = async () => null;
 
 export default function FormProduk({ produk = {}, labelTombol, action }) {
   const [state, formAction, isPending] = useActionState(action ?? tanpaAksi, null);
+  const [deskripsi, setDeskripsi] = useState(produk.deskripsi ?? "");
+  const [sedangBuat, setSedangBuat] = useState(false);
+  const [pesanAi, setPesanAi] = useState("");
+
+  // US-14: isi kolom deskripsi dengan hasil AI; admin masih bisa mengeditnya sebelum menyimpan.
+  async function buatDenganAi(e) {
+    const { nama, kategori } = e.currentTarget.form.elements;
+    setSedangBuat(true);
+    setPesanAi("");
+    const hasil = await buatDeskripsi(nama.value, kategori.value);
+    setSedangBuat(false);
+    if (hasil?.deskripsi) {
+      setDeskripsi(hasil.deskripsi);
+    } else {
+      setPesanAi(hasil?.error ?? "Gagal membuat deskripsi.");
+    }
+  }
 
   return (
     <form action={action ? formAction : undefined} className="flex max-w-xl flex-col gap-4">
@@ -34,7 +52,19 @@ export default function FormProduk({ produk = {}, labelTombol, action }) {
         placeholder="https://... atau /produk/nama-file.svg"
         defaultValue={produk.foto_url}
       />
-      <Input label="Deskripsi" name="deskripsi" textarea defaultValue={produk.deskripsi} />
+      <Input
+        label="Deskripsi"
+        name="deskripsi"
+        textarea
+        value={deskripsi}
+        onChange={(e) => setDeskripsi(e.target.value)}
+      />
+      <div className="flex flex-col items-start gap-1.5">
+        <Tombol type="button" varian="garis" onClick={buatDenganAi} disabled={sedangBuat}>
+          {sedangBuat ? "Membuat deskripsi..." : "Buat deskripsi dengan AI"}
+        </Tombol>
+        {pesanAi && <p className="text-sm text-bahaya">{pesanAi}</p>}
+      </div>
       <div className="flex gap-3">
         <Tombol type="submit" disabled={isPending}>
           {isPending ? "Menyimpan..." : labelTombol}

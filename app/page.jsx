@@ -64,7 +64,8 @@ export default async function HalamanKatalog({ searchParams }) {
   const q = nilai("q");
   const kategori = nilai("kategori");
   const urutan = Object.hasOwn(URUTAN, nilai("urutan")) ? nilai("urutan") : "terbaru";
-  const disaring = Boolean(q || kategori || urutan !== "terbaru");
+  const adaFilter = Boolean(q || kategori);
+  const disaring = adaFilter || urutan !== "terbaru";
 
   const [{ data: daftarProduk, error }, daftarKategori] = await Promise.all([
     ambilProduk({ q, kategori, urutan }),
@@ -139,7 +140,7 @@ export default async function HalamanKatalog({ searchParams }) {
           </p>
         ) : daftarProduk.length === 0 ? (
           <p className="rounded-lg border border-garis bg-permukaan px-3 py-2 text-sm text-teks-lembut">
-            {disaring ? "Tidak ada produk yang cocok dengan pencarian atau kategori ini." : "Belum ada produk."}
+            {adaFilter ? "Tidak ada produk yang cocok dengan pencarian atau kategori ini." : "Belum ada produk."}
           </p>
         ) : (
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3">

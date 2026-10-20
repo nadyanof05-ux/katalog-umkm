@@ -1,12 +1,45 @@
 import NavAdmin from "@/components/NavAdmin";
 import TabelProduk from "@/components/TabelProduk";
 import Tombol from "@/components/Tombol";
-import { produkContoh } from "@/lib/data-contoh";
+import { buatKlienAdmin } from "@/lib/supabase/admin";
+import { buatKlienPublik } from "@/lib/supabase/publik";
 
-// US-06: dilindungi oleh proxy.js (hanya admin yang sudah login).
-export default function HalamanAdmin() {
-  // US-07 (bonus): daftar produk masih memakai data contoh, belum dari database.
-  const daftarProduk = produkContoh;
+// Selalu ambil data produk terbaru dari database.
+export const dynamic = "force-dynamic";
+
+export default async function HalamanAdmin() {
+  let daftarProduk = [];
+
+  try {
+    const supabase = await buatKlienAdmin();
+    const { data, error } = await supabase
+      .from("produk")
+      .select("id, nama, harga, deskripsi, foto_url, kategori, created_at")
+      .order("created_at", { ascending: false });
+
+    if (!error && data) {
+      daftarProduk = data;
+    } else {
+      const klienPublik = buatKlienPublik();
+      const res = await klienPublik
+        .from("produk")
+        .select("id, nama, harga, deskripsi, foto_url, kategori, created_at")
+        .order("created_at", { ascending: false });
+      daftarProduk = res.data ?? [];
+    }
+  } catch (err) {
+    console.error("Gagal mengambil daftar produk di halaman admin:", err);
+    try {
+      const klienPublik = buatKlienPublik();
+      const res = await klienPublik
+        .from("produk")
+        .select("id, nama, harga, deskripsi, foto_url, kategori, created_at")
+        .order("created_at", { ascending: false });
+      daftarProduk = res.data ?? [];
+    } catch {
+      daftarProduk = [];
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6 py-8">
